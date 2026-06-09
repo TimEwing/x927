@@ -16,6 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # cargo and pip disagree on prerelease syntax (cargo: 1.0.0-rc1,
+      # pip/PEP440: 1.0.0rc1). Restrict release tags to plain semver so the same
+      # version string is valid for both, and fail fast rather than half-publish.
+      - name: Validate tag format
+        run: |
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tags must be plain semver vMAJOR.MINOR.PATCH (got '${GITHUB_REF_NAME}')."
+            exit 1
+          fi
+
       - name: Read pinned pdl commit
         id: pdl
         run: echo "rev=$(cat PDL_REV)" >> "$GITHUB_OUTPUT"

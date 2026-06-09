@@ -46,7 +46,8 @@ x927 = { git = "https://github.com/TimEwing/x927.git", tag = "rust-vX.Y.Z" }
 It's a crate; its `Cargo.toml` pulls `pdl-runtime` from the pinned pdl commit
 and `bytes` from crates.io (cargo resolves those transitively). Not on crates.io
 yet — blocked until pdl ships a release with the C++ backend, since the git
-`pdl-runtime` pin isn't publishable.
+`pdl-runtime` pin isn't publishable. (Full rationale for the install-tag scheme:
+[`docs/distribution.md`](docs/distribution.md).)
 
 ### Python
 
@@ -78,6 +79,7 @@ attaches tarballs to the GitHub Release, and pushes the `rust-vX.Y.Z` /
 
 ```
 spec/x927.pdl              the protocol — the only file you edit to change the wire format
+docs/distribution.md       how/why releases + install tags work (read this before changing them)
 scripts/generate.sh        runs pdlc for all three backends (used by CI + locally)
 third_party/pdl/           vendored packet_runtime.h (the C++ runtime header)
 PDL_REV                    pinned google/pdl commit (single source of truth)
