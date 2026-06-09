@@ -13,20 +13,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read pinned pdl version
+      - name: Read pinned pdl commit
         id: pdl
-        run: echo "version=$(cat PDL_VERSION)" >> "$GITHUB_OUTPUT"
+        run: echo "rev=$(cat PDL_REV)" >> "$GITHUB_OUTPUT"
 
       - uses: dtolnay/rust-toolchain@stable
 
       # Caching just the compiled pdlc binary lets generate.sh skip the
-      # (slow) cargo install on every run. Keyed on the pinned version so a
-      # bump to PDL_VERSION invalidates it automatically.
+      # (slow) cargo install on every run. Keyed on the pinned commit so a
+      # bump to PDL_REV invalidates it automatically.
       - name: Cache pdlc
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/pdlc
-          key: pdlc-${{ steps.pdl.outputs.version }}
+          key: pdlc-${{ steps.pdl.outputs.rev }}
 
       - name: Generate backends
         run: scripts/generate.sh

@@ -5,22 +5,27 @@
 # workflow, and locally if you happen to have rust installed. You do NOT need
 # rust to use x927 — grab a prebuilt artifact from the GitHub Releases page.
 #
+# We pin pdlc to a specific google/pdl commit (PDL_REV) rather than a crates.io
+# release because the C++ ('cxx') backend isn't in any published release yet —
+# it only exists on the main branch. The pinned sha keeps builds reproducible.
+#
 # Output lands in build/ (gitignored), one ready-to-consume tree per language.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-PDL_VERSION="$(cat PDL_VERSION)"
+PDL_REV="$(cat PDL_REV)"
+PDL_REPO="https://github.com/google/pdl"
 SPEC="spec/x927.pdl"
 NAME="x927"
 OUT="build"
 
-# pdlc is the pdl compiler from crates.io. Install it on demand if missing.
+# pdlc is the pdl compiler. Install it from the pinned commit if missing.
 if ! command -v pdlc >/dev/null 2>&1; then
     if command -v cargo >/dev/null 2>&1; then
-        echo ">> pdlc not found; installing pdl-compiler ${PDL_VERSION} via cargo"
-        cargo install pdl-compiler --version "${PDL_VERSION}" --locked
+        echo ">> pdlc not found; installing pdl-compiler @ ${PDL_REV} via cargo"
+        cargo install --git "${PDL_REPO}" --rev "${PDL_REV}" pdl-compiler
     else
         echo "error: pdlc not on PATH and cargo unavailable." >&2
         echo "       this is normally run in CI. to run locally, install rust first." >&2
@@ -34,6 +39,8 @@ rm -rf "${OUT}"
 mkdir -p "${OUT}/rust/src" "${OUT}/python/${NAME}" "${OUT}/cxx/include"
 
 # --- Rust: a self-contained crate -------------------------------------------
+# pdl-runtime is pinned to the SAME commit as the compiler so the generated
+# code matches the runtime API (main may have drifted from the 0.5.2 crate).
 pdlc "${SPEC}" --output-format rust > "${OUT}/rust/src/lib.rs"
 cat > "${OUT}/rust/Cargo.toml" <<EOF
 [package]
@@ -44,7 +51,7 @@ description = "Generated x927 packet codec"
 license = "MIT"
 
 [dependencies]
-pdl-runtime = "${PDL_VERSION}"
+pdl-runtime = { git = "${PDL_REPO}", rev = "${PDL_REV}" }
 bytes = "1"
 EOF
 
