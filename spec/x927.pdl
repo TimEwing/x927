@@ -28,13 +28,11 @@ packet Frame {
     _payload_,
 }
 
-// --- Liveness ---------------------------------------------------------------
-
-packet Ping : Frame (kind = PING) {
-}
-
-packet Pong : Frame (kind = PONG) {
-}
+// Note: PING / PONG carry no payload, so they don't get their own packet type
+// — they're just a Frame with `kind` set accordingly (check `frame.kind` on the
+// receiver). We deliberately avoid empty derived packets: pdl's C++ backend
+// currently miscompiles a zero-field child (references an undeclared `span`).
+// Only payload-bearing messages get a dedicated packet below.
 
 // --- Lighting ---------------------------------------------------------------
 
