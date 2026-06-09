@@ -1,0 +1,10 @@
+# generated codecs + release packaging (rebuilt by CI, never committed)
+/build/
+/dist/
+
+# rust
+/target/
+
+# python
+__pycache__/
+*.pyc

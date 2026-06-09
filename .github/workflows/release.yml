@@ -1,0 +1,52 @@
+name: release
+
+# Tag a version to ship it:
+#   git tag v1.0.0 && git push origin v1.0.0
+# This builds all three backends and attaches them to a GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # needed to create the release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read pinned pdl version
+        id: pdl
+        run: echo "version=$(cat PDL_VERSION)" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache pdlc
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/pdlc
+          key: pdlc-${{ steps.pdl.outputs.version }}
+
+      - name: Generate backends
+        run: scripts/generate.sh
+
+      - name: Stamp release version
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version = \"0.0.0\".*/version = \"${VER}\"/" build/rust/Cargo.toml
+          sed -i "s/^version = \"0.0.0\"/version = \"${VER}\"/" build/python/pyproject.toml
+
+      - name: Package artifacts
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          mkdir -p dist
+          tar -C build/rust   -czf "dist/x927-rust-${TAG}.tar.gz"   .
+          tar -C build/python -czf "dist/x927-python-${TAG}.tar.gz" .
+          tar -C build/cxx    -czf "dist/x927-cxx-${TAG}.tar.gz"    .
+          cp spec/x927.pdl "dist/x927-${TAG}.pdl"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes dist/*

@@ -1,0 +1,58 @@
+// x927 — a tiny packet protocol so our lighting + music projects can talk.
+//
+// Edit THIS file to evolve the wire format. CI regenerates the Rust / Python /
+// C++ codecs on every push, and tagging a release (vX.Y.Z) publishes them as
+// downloadable artifacts. See README.md.
+//
+// Syntax reference: https://github.com/google/pdl/blob/main/doc/reference.md
+
+little_endian_packets
+
+// Every frame on the wire starts with the same header. `kind` selects which
+// payload follows. (We avoid the field name `type` on purpose — it collides
+// with keywords in the C++/Python backends.)
+enum MessageKind : 8 {
+    PING           = 0x00,  // are you there?
+    PONG           = 0x01,  // yep.
+    SET_RGB        = 0x10,  // set a channel to an RGB color
+    SET_BRIGHTNESS = 0x11,  // set a channel's master brightness
+    BEAT           = 0x20,  // tempo/beat sync tick for music
+}
+
+// Base frame. Transport (serial/UDP/etc.) is responsible for framing, so the
+// payload runs to the end of the packet.
+packet Frame {
+    version : 8,            // protocol version, currently 1
+    kind    : MessageKind,
+    seq     : 16,           // sender sequence number, for dedup/ordering
+    _payload_,
+}
+
+// --- Liveness ---------------------------------------------------------------
+
+packet Ping : Frame (kind = PING) {
+}
+
+packet Pong : Frame (kind = PONG) {
+}
+
+// --- Lighting ---------------------------------------------------------------
+
+packet SetRgb : Frame (kind = SET_RGB) {
+    channel : 8,           // which fixture/strip, 0 = broadcast
+    red     : 8,
+    green   : 8,
+    blue    : 8,
+}
+
+packet SetBrightness : Frame (kind = SET_BRIGHTNESS) {
+    channel : 8,
+    level   : 8,           // 0 = off, 255 = full
+}
+
+// --- Music ------------------------------------------------------------------
+
+packet Beat : Frame (kind = BEAT) {
+    bpm   : 16,            // tempo in beats per minute
+    phase : 8,             // position within the current beat, 0..255
+}
