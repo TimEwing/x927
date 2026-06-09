@@ -46,6 +46,27 @@ jobs:
           tar -C build/cxx    -czf "dist/x927-cxx-${TAG}.tar.gz"    .
           cp spec/x927.pdl "dist/x927-${TAG}.pdl"
 
+      # Publish each package's source at the root of a dedicated orphan tag so
+      # it's installable directly: `cargo add --git … --tag rust-vX.Y.Z` and
+      # `pip install git+…@python-vX.Y.Z`. Keeps generated code out of main's
+      # history while giving cargo/pip a real git ref to fetch.
+      - name: Publish per-language install tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          for lang in rust python; do
+            tmp="$(mktemp -d)"
+            cp -a "build/${lang}/." "$tmp/"
+            git -C "$tmp" init -q -b dist
+            git -C "$tmp" add -A
+            git -C "$tmp" commit -q -m "x927 ${lang} ${TAG}"
+            git -C "$tmp" push -f "$REMOTE" "HEAD:refs/tags/${lang}-${TAG}"
+          done
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

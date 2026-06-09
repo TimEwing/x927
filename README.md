@@ -26,21 +26,42 @@ spec/x927.pdl ──► (GitHub Actions runs pdlc) ──► Rust / Python / C++
 
 ## Using it in a project
 
-Grab the artifact for your language from the
-[Releases page](https://github.com/TimEwing/x927/releases).
+Each release publishes both downloadable tarballs (on the
+[Releases page](https://github.com/TimEwing/x927/releases)) and per-language
+**install tags** so you can pull a pinned version straight from the command
+line — no manual download.
 
-| Language | Artifact                  | Runtime dependency                          |
-|----------|---------------------------|---------------------------------------------|
-| Rust     | `x927-rust-vX.Y.Z.tar.gz` | crate; `pdl-runtime` (git-pinned) + `bytes`  |
-| Python   | `x927-python-vX.Y.Z.tar.gz` | none — pure stdlib (Python 3.8+)          |
-| C++      | `x927-cxx-vX.Y.Z.tar.gz`  | none — bundled `packet_runtime.h` (C++17)   |
+### Rust
 
-- **Rust:** it's a crate. Drop it in and `path`-depend on it, or `git`-depend on
-  a vendored copy. Its `Cargo.toml` pulls `pdl-runtime` from the pinned pdl
-  commit and `bytes` from crates.io.
-- **Python:** `pip install x927-python-vX.Y.Z.tar.gz`, then `import x927`.
-- **C++:** add `include/` to your include path, `#include "x927.h"`. Needs
-  `-std=c++17`. `packet_runtime.h` ships alongside the generated header.
+```sh
+cargo add --git https://github.com/TimEwing/x927.git --tag rust-vX.Y.Z x927
+```
+
+or in `Cargo.toml`:
+
+```toml
+x927 = { git = "https://github.com/TimEwing/x927.git", tag = "rust-vX.Y.Z" }
+```
+
+It's a crate; its `Cargo.toml` pulls `pdl-runtime` from the pinned pdl commit
+and `bytes` from crates.io (cargo resolves those transitively). Not on crates.io
+yet — blocked until pdl ships a release with the C++ backend, since the git
+`pdl-runtime` pin isn't publishable.
+
+### Python
+
+```sh
+pip install "git+https://github.com/TimEwing/x927.git@python-vX.Y.Z"
+```
+
+then `import x927`. Pure stdlib, Python 3.8+. (For a public repo you can also
+`pip install` the release tarball URL directly.)
+
+### C++
+
+No package manager — grab `x927-cxx-vX.Y.Z.tar.gz` from the Releases page, add
+its `include/` to your include path, and `#include "x927.h"`. Needs `-std=c++17`;
+the required `packet_runtime.h` ships alongside the generated header.
 
 ## Cutting a release
 
@@ -49,8 +70,9 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The release workflow stamps that version into the Rust/Python packages and
-publishes the assets. Use semver; the protocol is the contract.
+The release workflow stamps that version into the Rust/Python packages,
+attaches tarballs to the GitHub Release, and pushes the `rust-vX.Y.Z` /
+`python-vX.Y.Z` install tags. Use semver; the protocol is the contract.
 
 ## Repo layout
 
